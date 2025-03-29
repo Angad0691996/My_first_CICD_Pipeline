@@ -6,7 +6,7 @@ pipeline {
         SSH_CREDENTIALS_ID = 'ec2-ssh-key'
         DOCKER_CREDENTIALS_ID = 'docker-hub-credentials'
         DOCKER_IMAGE = 'angad0691996/iot-subscriber:latest'
-        REPO_URL = 'https://github.com/Angad0691996/My_first_CICD_Pipeline.git'
+        REPO_URL = 'github.com/Angad0691996/My_first_CICD_Pipeline.git'
         WORKDIR = 'iot-subscriber'
     }
 
@@ -23,7 +23,9 @@ pipeline {
                         }
                     } else {
                         echo 'Cloning repository...'
-                        sh "git clone ${REPO_URL} ${WORKDIR}"
+                        withCredentials([usernamePassword(credentialsId: GIT_CREDENTIALS_ID, usernameVariable: 'GIT_USER', passwordVariable: 'GIT_PASS')]) {
+                            sh 'git clone https://${GIT_USER}:${GIT_PASS}@${REPO_URL} ${WORKDIR}'
+                        }
                     }
                 }
             }
