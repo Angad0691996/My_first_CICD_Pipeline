@@ -4,7 +4,7 @@ pipeline {
     environment {
         REPO_URL = 'https://github.com/Angad0691996/My_first_CICD_Pipeline.git'
         BRANCH = 'main'
-        APP_DIR = "${WORKSPACE}/iot-subscriber"  // Use Jenkins workspace
+        APP_DIR = "${WORKSPACE}/iot-subscriber"
     }
 
     stages {
@@ -12,7 +12,13 @@ pipeline {
             steps {
                 withCredentials([usernamePassword(credentialsId: 'github-credentials', usernameVariable: 'GIT_USER', passwordVariable: 'GIT_PASS')]) {
                     sh """
-                    git clone https://${GIT_USER}:${GIT_PASS}@github.com/Angad0691996/My_first_CICD_Pipeline.git ${APP_DIR} || (cd ${APP_DIR} && git pull)
+                    if [ -d "${APP_DIR}/.git" ]; then
+                        echo "Directory exists, pulling latest changes..."
+                        cd ${APP_DIR} && git pull origin ${BRANCH}
+                    else
+                        echo "Cloning repository..."
+                        git clone https://${GIT_USER}:${GIT_PASS}@github.com/Angad0691996/My_first_CICD_Pipeline.git ${APP_DIR}
+                    fi
                     """
                 }
             }
@@ -21,17 +27,19 @@ pipeline {
         stage('Install Dependencies & Docker') {
             steps {
                 sh """
-                sudo apt update
-                sudo apt install -y python3-pip
+                echo "Updating system packages..."
+                echo '${GIT_PASS}' | sudo -S apt update
+                echo "Installing Python dependencies..."
+                sudo -S apt install -y python3-pip
                 pip3 install -r ${APP_DIR}/requirements.txt
 
-                # Install Docker if not present
+                echo "Checking if Docker is installed..."
                 if ! command -v docker &> /dev/null; then
                     echo "Installing Docker..."
-                    sudo apt install -y docker.io
+                    sudo -S apt install -y docker.io
                     sudo systemctl start docker
                     sudo systemctl enable docker
-                    sudo usermod -aG docker \$USER
+                    sudo usermod -aG docker jenkins
                 else
                     echo "Docker is already installed."
                 fi
@@ -51,7 +59,9 @@ pipeline {
             steps {
                 sh """
                 cd ${APP_DIR}
+                echo "Building Docker image..."
                 docker build -t iot-subscriber .
+                echo "Restarting Docker container..."
                 docker stop iot-subscriber || true
                 docker rm iot-subscriber || true
                 docker run -d --name iot-subscriber iot-subscriber
