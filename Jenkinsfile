@@ -2,15 +2,24 @@ pipeline {
     agent any
 
     environment {
-        INSTALL_DIR = '/opt/iot-app'
-        VENV_DIR = '/opt/iot-app/venv'
+        INSTALL_DIR = "/opt/iot-app"
+        VENV_DIR = "$INSTALL_DIR/venv"
     }
 
     stages {
+        stage('Checkout Code') {
+            steps {
+                git branch: 'main',
+                    credentialsId: 'github-credentials',
+                    url: 'https://github.com/Angad0691996/My_first_CICD_Pipeline.git'
+            }
+        }
+
         stage('Install System Packages') {
             steps {
                 sh '''
-                sudo apt update && sudo apt install -y python3 python3-venv python3-pip
+                sudo apt update
+                sudo apt install -y python3 python3-venv python3-pip
                 '''
             }
         }
@@ -18,18 +27,20 @@ pipeline {
         stage('Setup Python Virtual Environment') {
             steps {
                 sh '''
-                # Create installation directory if not exists
+                # Ensure the installation directory exists and has correct permissions
                 sudo mkdir -p ${INSTALL_DIR}
+                sudo chown -R jenkins:jenkins ${INSTALL_DIR}
+                sudo chmod -R 755 ${INSTALL_DIR}
 
-                # Create virtual environment if not exists
-                if [ ! -d "${VENV_DIR}" ]; then
-                    python3 -m venv ${VENV_DIR}
-                fi
-
-                # Activate venv and install required packages
+                # Create a virtual environment
+                python3 -m venv ${VENV_DIR}
                 source ${VENV_DIR}/bin/activate
+
+                # Upgrade pip and install dependencies
                 pip install --upgrade pip
-                pip install AWSIoTPythonSDK Flask Flask-MySQLdb Flask-SocketIO paho-mqtt mysql-connector-python mysqlclient eventlet greenlet python-socketio
+                pip install AWSIoTPythonSDK Flask Flask-MySQLdb Flask-SocketIO paho-mqtt \
+                            mysql-connector-python mysqlclient eventlet greenlet python-socketio
+
                 deactivate
                 '''
             }
@@ -48,10 +59,10 @@ pipeline {
 
     post {
         success {
-            echo '✅ Python Virtual Environment & Dependencies Successfully Installed on Jenkins EC2!'
+            echo "✅ Installation Successful!"
         }
         failure {
-            echo '❌ Installation Failed! Check logs for errors.'
+            echo "❌ Installation Failed! Check logs for errors."
         }
     }
 }
