@@ -35,9 +35,7 @@ pipeline {
             steps {
                 script {
                     sh '''
-                        source $VENV_DIR/bin/activate
-                        pip install --upgrade pip
-                        pip install -r requirements_subscriber.txt || echo "requirements_subscriber.txt not found, skipping..."
+                        bash -c "source $VENV_DIR/bin/activate && pip install --upgrade pip && pip install -r requirements_subscriber.txt || echo 'requirements_subscriber.txt not found, skipping...'"
                     '''
                 }
             }
@@ -47,8 +45,7 @@ pipeline {
             steps {
                 script {
                     sh '''
-                        source $VENV_DIR/bin/activate
-                        pip list
+                        bash -c "source $VENV_DIR/bin/activate && pip list"
                     '''
                 }
             }
