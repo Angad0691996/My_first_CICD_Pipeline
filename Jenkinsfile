@@ -2,109 +2,56 @@ pipeline {
     agent any
 
     environment {
-        GIT_CREDENTIALS_ID = 'github-credentials'
-        SSH_CREDENTIALS_ID = 'ec2-ssh-key'
-        DOCKER_CREDENTIALS_ID = 'docker-hub-credentials'
-        DOCKER_IMAGE = 'angad0691996/iot-subscriber:latest'
-        REPO_URL = 'github.com/Angad0691996/My_first_CICD_Pipeline.git'
-        WORKDIR = 'iot-subscriber'
+        INSTALL_DIR = '/opt/iot-app'
+        VENV_DIR = '/opt/iot-app/venv'
     }
 
     stages {
-        stage('Clone Repository') {
+        stage('Install System Packages') {
             steps {
-                script {
-                    if (fileExists(WORKDIR)) {
-                        echo 'Directory exists, pulling latest changes...'
-                        dir(WORKDIR) {
-                            withCredentials([usernamePassword(credentialsId: GIT_CREDENTIALS_ID, usernameVariable: 'GIT_USER', passwordVariable: 'GIT_PASS')]) {
-                                sh 'git pull https://${GIT_USER}:${GIT_PASS}@${REPO_URL} main'
-                            }
-                        }
-                    } else {
-                        echo 'Cloning repository...'
-                        withCredentials([usernamePassword(credentialsId: GIT_CREDENTIALS_ID, usernameVariable: 'GIT_USER', passwordVariable: 'GIT_PASS')]) {
-                            sh 'git clone https://${GIT_USER}:${GIT_PASS}@${REPO_URL} ${WORKDIR}'
-                        }
-                    }
-                }
+                sh '''
+                sudo apt update && sudo apt install -y python3 python3-venv python3-pip
+                '''
             }
         }
 
-        stage('Install Dependencies & Docker') {
+        stage('Setup Python Virtual Environment') {
             steps {
-                script {
-                    sh '''
-                        echo "Updating system and installing Docker..."
-                        sudo apt-get update -y
-                        sudo apt-get install -y docker.io
-                        sudo systemctl start docker
-                        sudo systemctl enable docker
-                        sudo usermod -aG docker jenkins
-                        echo "Docker installed successfully!"
-                    '''
-                }
+                sh '''
+                # Create installation directory if not exists
+                sudo mkdir -p ${INSTALL_DIR}
+
+                # Create virtual environment if not exists
+                if [ ! -d "${VENV_DIR}" ]; then
+                    python3 -m venv ${VENV_DIR}
+                fi
+
+                # Activate venv and install required packages
+                source ${VENV_DIR}/bin/activate
+                pip install --upgrade pip
+                pip install AWSIoTPythonSDK Flask Flask-MySQLdb Flask-SocketIO paho-mqtt mysql-connector-python mysqlclient eventlet greenlet python-socketio
+                deactivate
+                '''
             }
         }
 
-        stage('Login to Docker Hub') {
+        stage('Verify Installation') {
             steps {
-                withCredentials([usernamePassword(credentialsId: DOCKER_CREDENTIALS_ID, usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
-                    sh 'echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin'
-                }
-            }
-        }
-
-        stage('Build & Push Docker Image') {
-            steps {
-                script {
-                    dir(WORKDIR) {
-                        sh '''
-                            echo "Building Docker image..."
-                            docker build -t $DOCKER_IMAGE .
-                            echo "Pushing image to Docker Hub..."
-                            docker push $DOCKER_IMAGE
-                        '''
-                    }
-                }
-            }
-        }
-
-        stage('Run IoT Subscriber in Docker') {
-            steps {
-                script {
-                    sh '''
-                        echo "Stopping existing container (if running)..."
-                        docker stop iot-subscriber || true
-                        docker rm iot-subscriber || true
-                        echo "Starting new container..."
-                        docker run -d --name iot-subscriber --restart unless-stopped $DOCKER_IMAGE
-                    '''
-                }
-            }
-        }
-
-        stage('Reminder to Start IoT Publisher') {
-            steps {
-                echo '✅ IoT Subscriber is running. Remember to start the IoT Publisher on your Windows laptop!'
-            }
-        }
-
-        stage('Monitor Logs') {
-            steps {
-                script {
-                    sh 'docker logs -f iot-subscriber'
-                }
+                sh '''
+                source ${VENV_DIR}/bin/activate
+                pip list
+                deactivate
+                '''
             }
         }
     }
 
     post {
         success {
-            echo '✅ Pipeline completed successfully!'
+            echo '✅ Python Virtual Environment & Dependencies Successfully Installed on Jenkins EC2!'
         }
         failure {
-            echo '❌ Build failed! Check logs for errors.'
+            echo '❌ Installation Failed! Check logs for errors.'
         }
     }
 }
