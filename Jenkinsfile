@@ -1,7 +1,7 @@
 pipeline {
     agent any
     environment {
-        APP_DIR = "/opt/iot-app"
+        APP_DIR = "/home/ubuntu/iot-app"
         VENV_DIR = "$APP_DIR/venv"
     }
     stages {
