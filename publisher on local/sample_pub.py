@@ -28,7 +28,9 @@ def generate_vehicle_data():
     return {
         "Vehicle_ID":"MH12VC1893",
         "Type":"SUV",
-        "FUEL":"PETROL"
+        "FUEL":"PETROL",
+        "SPEED":"56KMPH"
+
     }
 
 # Publish Data Every 5 Seconds
