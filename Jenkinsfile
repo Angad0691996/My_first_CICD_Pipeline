@@ -4,7 +4,7 @@ pipeline {
     environment {
         APP_DIR = "/var/lib/jenkins/iot-app"
         VENV_DIR = "$APP_DIR/venv"
-        SCRIPT_PATH = "$APP_DIR/ec2_subscriber.py"
+        SCRIPT_PATH = "$APP_DIR/subscriber.py"     // ✅ Fixed this line
         LOG_FILE = "$APP_DIR/subscriber.log"
     }
 
@@ -25,7 +25,7 @@ pipeline {
                 script {
                     sh '''
                         mkdir -p $APP_DIR
-                        cp -r * $APP_DIR/
+                        cp -r * "$APP_DIR/"
                     '''
                 }
             }
@@ -79,7 +79,7 @@ pipeline {
             echo "❌ Installation Failed! Check logs for errors."
         }
         success {
-            echo "✅ Installation Successful and ec2_subscriber.py started in background!"
+            echo "✅ Installation Successful and subscriber.py started in background!"
         }
     }
 }
