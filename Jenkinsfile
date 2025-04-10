@@ -1,9 +1,11 @@
 pipeline {
     agent any
+
     environment {
-        APP_DIR = "/home/ubuntu/iot-app"
+        APP_DIR = "/var/lib/jenkins/iot-app"
         VENV_DIR = "$APP_DIR/venv"
     }
+
     stages {
         stage('Install System Packages') {
             steps {
@@ -20,9 +22,8 @@ pipeline {
             steps {
                 script {
                     sh '''
-                        sudo mkdir -p $APP_DIR
-                        sudo chown -R jenkins:jenkins $APP_DIR  # Ensure Jenkins can write
-                        
+                        mkdir -p $APP_DIR
+
                         if [ ! -d "$VENV_DIR" ]; then
                             python3 -m venv $VENV_DIR
                         fi
