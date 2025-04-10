@@ -4,6 +4,8 @@ pipeline {
     environment {
         APP_DIR = "/var/lib/jenkins/iot-app"
         VENV_DIR = "$APP_DIR/venv"
+        SCRIPT_PATH = "$APP_DIR/ec2_subscriber.py"
+        LOG_FILE = "$APP_DIR/subscriber.log"
     }
 
     stages {
@@ -18,12 +20,21 @@ pipeline {
             }
         }
 
-        stage('Setup Python Virtual Environment') {
+        stage('Copy Source Files') {
             steps {
                 script {
                     sh '''
                         mkdir -p $APP_DIR
+                        cp -r * $APP_DIR/
+                    '''
+                }
+            }
+        }
 
+        stage('Setup Python Virtual Environment') {
+            steps {
+                script {
+                    sh '''
                         if [ ! -d "$VENV_DIR" ]; then
                             python3 -m venv $VENV_DIR
                         fi
@@ -36,7 +47,17 @@ pipeline {
             steps {
                 script {
                     sh '''
-                        bash -c "source $VENV_DIR/bin/activate && pip install --upgrade pip && pip install -r requirements_subscriber.txt || echo 'requirements_subscriber.txt not found, skipping...'"
+                        bash -c "source $VENV_DIR/bin/activate && pip install --upgrade pip && pip install -r $APP_DIR/requirements_subscriber.txt || echo 'requirements_subscriber.txt not found, skipping...'"
+                    '''
+                }
+            }
+        }
+
+        stage('Run EC2 Subscriber Script') {
+            steps {
+                script {
+                    sh '''
+                        nohup bash -c "source $VENV_DIR/bin/activate && python3 $SCRIPT_PATH" > $LOG_FILE 2>&1 &
                     '''
                 }
             }
@@ -58,7 +79,7 @@ pipeline {
             echo "❌ Installation Failed! Check logs for errors."
         }
         success {
-            echo "✅ Installation Successful!"
+            echo "✅ Installation Successful and ec2_subscriber.py started in background!"
         }
     }
 }
