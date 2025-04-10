@@ -29,7 +29,7 @@ def generate_vehicle_data():
         "Vehicle_ID":"MH12VC1893",
         "Type":"SUV",
         "FUEL":"PETROL",
-        "SPEED":"56KMPH"
+        "SPEED":"111KMPH"
 
     }
 
