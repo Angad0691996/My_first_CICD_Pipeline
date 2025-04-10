@@ -4,7 +4,7 @@ pipeline {
     environment {
         APP_DIR = "/var/lib/jenkins/iot-app"
         VENV_DIR = "$APP_DIR/venv"
-        SCRIPT_PATH = "$APP_DIR/subscriber on AWS cloud/subscriber.py"
+        SCRIPT_PATH = "$APP_DIR/subscriber_on_AWS_cloud/subscriber.py"
         LOG_FILE = "$APP_DIR/subscriber.log"
     }
 
