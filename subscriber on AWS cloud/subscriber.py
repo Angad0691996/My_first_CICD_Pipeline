@@ -17,10 +17,20 @@ mqtt_client = AWSIoTMQTTClient(CLIENT_ID)
 mqtt_client.configureEndpoint(ENDPOINT, 8883)
 mqtt_client.configureCredentials(ROOT_CA, PRIVATE_KEY, CERTIFICATE)
 
+# Path to the log file
+log_file_path = os.path.abspath("messages.txt")
+
 # Callback function when message is received
 def message_callback(client, userdata, message):
+    decoded_msg = json.loads(message.payload)
+    formatted_msg = json.dumps(decoded_msg, indent=4)
+    
     print("\n🚗 Received Data:")
-    print(json.dumps(json.loads(message.payload), indent=4))
+    print(formatted_msg)
+
+    # Save to messages.txt
+    with open(log_file_path, "a") as f:
+        f.write(formatted_msg + "\n\n")
 
 # Connect & Subscribe
 mqtt_client.connect()
@@ -33,4 +43,3 @@ try:
         pass
 except KeyboardInterrupt:
     print("\nSubscriber stopped.")
-
